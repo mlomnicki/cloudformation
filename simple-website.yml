@@ -1,0 +1,30 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  RootDomainName:
+    Description: Domain name of your website (example.com)
+    Type: String
+Resources:
+  S3Bucket:
+    Type: "AWS::S3::Bucket"
+    Properties:
+      BucketName: !Ref RootDomainName
+      AccessControl: PublicRead
+      WebsiteConfiguration:
+        IndexDocument: index.html
+  BucketPolicy:
+    Type: 'AWS::S3::BucketPolicy'
+    Properties:
+      Bucket: !Ref S3Bucket
+      PolicyDocument:
+        Id: ReadPolicy
+        Version: 2012-10-17
+        Statement:
+          - Sid: PublicReadForGetBucketObjects
+            Effect: Allow
+            Principal: '*'
+            Action: 's3:GetObject'
+            Resource: !Join ['', ['arn:aws:s3:::', !Ref S3Bucket, /*]]
+Outputs:
+  WebsiteURL:
+    Value: !GetAtt [S3Bucket, WebsiteURL]
+    Description: URL for website hosted on S3
