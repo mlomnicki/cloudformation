@@ -3,6 +3,10 @@ Parameters:
   RootDomainName:
     Description: Domain name of your website (example.com)
     Type: String
+  Username:
+    Description: Name of user with write access to S3
+    Type: String
+    Default: "s3user"
 Resources:
   S3Bucket:
     Type: "AWS::S3::Bucket"
@@ -24,6 +28,31 @@ Resources:
             Principal: '*'
             Action: 's3:GetObject'
             Resource: !Join ['', ['arn:aws:s3:::', !Ref S3Bucket, /*]]
+  S3Policy:
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyName: !Join ['-', [!Ref RootDomainName, 'S3Policy']]
+      Users:
+        - !Ref Username
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - s3:GetBucketLocation
+              - s3:ListAllMyBuckets
+            Resource: arn:aws:s3:::*
+          - Effect: Allow
+            Action:
+              - s3:ListBucket
+            Resource: !Join ['', ['arn:aws:s3:::', !Ref RootDomainName]]
+          - Effect: Allow
+            Action:
+              - s3:PutObject
+              - s3:PubObjectAcl
+              - s3:GetObject
+              - s3:DeleteObject
+            Resource: !Join ['', ['arn:aws:s3:::', !Ref RootDomainName, '/*']]
 Outputs:
   WebsiteURL:
     Value: !GetAtt [S3Bucket, WebsiteURL]
