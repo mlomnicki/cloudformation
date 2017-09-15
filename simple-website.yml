@@ -15,6 +15,14 @@ Resources:
       AccessControl: PublicRead
       WebsiteConfiguration:
         IndexDocument: index.html
+  WWWBucket:
+    Type: "AWS::S3::Bucket"
+    Properties:
+      BucketName: !Join ['.', ['www', !Ref RootDomainName]]
+      WebsiteConfiguration:
+        RedirectAllRequestsTo:
+          HostName: !Ref RootDomainName
+          Protocol: http
   BucketPolicy:
     Type: 'AWS::S3::BucketPolicy'
     Properties:
