@@ -7,6 +7,15 @@ Parameters:
     Description: Name of user with write access to S3
     Type: String
     Default: "s3user"
+  WWWRedirect:
+    Description: Redirect www. to naked domain
+    Type: String
+    AllowedValues:
+      - Yes
+      - No
+    Default: Yes
+Conditions:
+  RedirectWWWToNonWWW: !Equals [ !Ref WWWRedirect, Yes ]
 Resources:
   S3Bucket:
     Type: "AWS::S3::Bucket"
@@ -17,6 +26,7 @@ Resources:
         IndexDocument: index.html
   WWWBucket:
     Type: "AWS::S3::Bucket"
+    Condition: RedirectWWWToNonWWW
     Properties:
       BucketName: !Join ['.', ['www', !Ref RootDomainName]]
       WebsiteConfiguration:
