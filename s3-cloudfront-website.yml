@@ -78,9 +78,10 @@ Resources:
         Enabled: Yes
         DefaultRootObject: "index.html"
         Origins:
-          - DomainName: !GetAtt [S3Bucket, DomainName]
+          - DomainName: !Select ["1", !Split  ["http://", !GetAtt [S3Bucket, WebsiteURL]]]
             Id: !Join ['-', ['cf', !Ref RootDomainName]]
-            S3OriginConfig: {}
+            CustomOriginConfig:
+              OriginProtocolPolicy: http-only
         DefaultCacheBehavior:
           ForwardedValues:
             QueryString: No
