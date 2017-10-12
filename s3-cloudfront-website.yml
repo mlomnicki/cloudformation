@@ -1,0 +1,95 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  RootDomainName:
+    Description: Domain name of your website (example.com)
+    Type: String
+  Username:
+    Description: Name of user with write access to S3
+    Type: String
+    Default: "s3user"
+  WWWRedirect:
+    Description: Redirect www. to naked domain
+    Type: String
+    AllowedValues:
+      - Yes
+      - No
+    Default: Yes
+Conditions:
+  RedirectWWWToNonWWW: !Equals [ !Ref WWWRedirect, Yes ]
+Resources:
+  S3Bucket:
+    Type: "AWS::S3::Bucket"
+    Properties:
+      BucketName: !Ref RootDomainName
+      AccessControl: PublicRead
+      WebsiteConfiguration:
+        IndexDocument: index.html
+  WWWBucket:
+    Type: "AWS::S3::Bucket"
+    Condition: RedirectWWWToNonWWW
+    Properties:
+      BucketName: !Join ['.', ['www', !Ref RootDomainName]]
+      WebsiteConfiguration:
+        RedirectAllRequestsTo:
+          HostName: !Ref RootDomainName
+          Protocol: http
+  BucketPolicy:
+    Type: 'AWS::S3::BucketPolicy'
+    Properties:
+      Bucket: !Ref S3Bucket
+      PolicyDocument:
+        Id: ReadPolicy
+        Version: 2012-10-17
+        Statement:
+          - Sid: PublicReadForGetBucketObjects
+            Effect: Allow
+            Principal: '*'
+            Action: 's3:GetObject'
+            Resource: !Join ['', ['arn:aws:s3:::', !Ref S3Bucket, /*]]
+  S3Policy:
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyName: !Join ['-', [!Ref RootDomainName, 'S3Policy']]
+      Users:
+        - !Ref Username
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - s3:GetBucketLocation
+              - s3:ListAllMyBuckets
+            Resource: arn:aws:s3:::*
+          - Effect: Allow
+            Action:
+              - s3:ListBucket
+            Resource: !Join ['', ['arn:aws:s3:::', !Ref RootDomainName]]
+          - Effect: Allow
+            Action:
+              - s3:PutObject
+              - s3:PubObjectAcl
+              - s3:GetObject
+              - s3:DeleteObject
+            Resource: !Join ['', ['arn:aws:s3:::', !Ref RootDomainName, '/*']]
+  Cloudfront:
+    Type: "AWS::CloudFront::Distribution"
+    Properties:
+      DistributionConfig:
+        Enabled: Yes
+        DefaultRootObject: "index.html"
+        Origins:
+          - DomainName: !GetAtt [S3Bucket, DomainName]
+            Id: !Join ['-', ['cf', !Ref RootDomainName]]
+            S3OriginConfig: {}
+        DefaultCacheBehavior:
+          ForwardedValues:
+            QueryString: No
+          TargetOriginId: !Join ['-', ['cf', !Ref RootDomainName]]
+          ViewerProtocolPolicy: allow-all
+Outputs:
+  WebsiteURL:
+    Value: !GetAtt [S3Bucket, WebsiteURL]
+    Description: URL for website hosted on S3
+  CloudfrontDomain:
+    Value: !GetAtt [Cloudfront, DomainName]
+    Description: URL for website hosted on CloudFront
