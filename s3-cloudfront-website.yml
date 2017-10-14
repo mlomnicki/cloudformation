@@ -77,6 +77,8 @@ Resources:
       DistributionConfig:
         Enabled: Yes
         DefaultRootObject: "index.html"
+        Aliases:
+          - !Ref RootDomainName
         Origins:
           - DomainName: !Select ["1", !Split  ["http://", !GetAtt [S3Bucket, WebsiteURL]]]
             Id: !Join ['-', ['cf', !Ref RootDomainName]]
