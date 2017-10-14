@@ -85,6 +85,7 @@ Resources:
             CustomOriginConfig:
               OriginProtocolPolicy: http-only
         DefaultCacheBehavior:
+          Compress: Yes
           ForwardedValues:
             QueryString: No
           TargetOriginId: !Join ['-', ['cf', !Ref RootDomainName]]
